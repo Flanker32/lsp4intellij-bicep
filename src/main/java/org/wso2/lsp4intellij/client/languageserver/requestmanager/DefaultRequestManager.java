@@ -25,7 +25,9 @@ import org.eclipse.lsp4j.services.WorkspaceService;
 import org.wso2.lsp4intellij.client.languageserver.ServerStatus;
 import org.wso2.lsp4intellij.client.languageserver.wrapper.LanguageServerWrapper;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,15 +36,15 @@ import java.util.concurrent.CompletableFuture;
  */
 public class DefaultRequestManager implements RequestManager {
 
-    private Logger LOG = Logger.getInstance(DefaultRequestManager.class);
+    private final Logger LOG = Logger.getInstance(DefaultRequestManager.class);
 
-    private LanguageServerWrapper wrapper;
-    private LanguageServer server;
-    private LanguageClient client;
-    private ServerCapabilities serverCapabilities;
-    private TextDocumentSyncOptions textDocumentOptions;
-    private WorkspaceService workspaceService;
-    private TextDocumentService textDocumentService;
+    private final LanguageServerWrapper wrapper;
+    private final LanguageServer server;
+    private final LanguageClient client;
+    private final ServerCapabilities serverCapabilities;
+    private final TextDocumentSyncOptions textDocumentOptions;
+    private final WorkspaceService workspaceService;
+    private final TextDocumentService textDocumentService;
 
     public DefaultRequestManager(LanguageServerWrapper wrapper, LanguageServer server, LanguageClient client,
                                  ServerCapabilities serverCapabilities) {
@@ -51,9 +53,37 @@ public class DefaultRequestManager implements RequestManager {
         this.server = server;
         this.client = client;
         this.serverCapabilities = serverCapabilities;
-
-        textDocumentOptions = serverCapabilities.getTextDocumentSync().isRight() ?
-                serverCapabilities.getTextDocumentSync().getRight() : null;
+        if (Objects.isNull(serverCapabilities.getHoverProvider())) {
+            serverCapabilities.setHoverProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getCodeActionProvider())) {
+            serverCapabilities.setCodeActionProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getDocumentFormattingProvider())) {
+            serverCapabilities.setDocumentFormattingProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getDocumentRangeFormattingProvider())) {
+            serverCapabilities.setDocumentRangeFormattingProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getDocumentHighlightProvider())) {
+            serverCapabilities.setDefinitionProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getTypeDefinitionProvider())) {
+            serverCapabilities.setTypeDefinitionProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getReferencesProvider())) {
+            serverCapabilities.setReferencesProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getDeclarationProvider())) {
+            serverCapabilities.setDeclarationProvider(true);
+        }
+        if (Objects.isNull(serverCapabilities.getCompletionProvider())) {
+            serverCapabilities.setCompletionProvider(new CompletionOptions(true, Arrays.asList(".", ":", "@", " ")));
+        }
+        textDocumentOptions = Optional.of(serverCapabilities)
+                .map(ServerCapabilities::getTextDocumentSync)
+                .filter(either -> either.isRight())
+                .map(either -> either.getRight()).orElse(null);
         workspaceService = server.getWorkspaceService();
         textDocumentService = server.getTextDocumentService();
     }
