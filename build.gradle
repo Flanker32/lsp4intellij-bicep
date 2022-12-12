@@ -10,13 +10,15 @@ plugins {
     id 'signing'
 }
 
+apply plugin: 'maven-publish'
+
 repositories {
     mavenCentral()
 }
 
 tasks{
     runPluginVerifier {
-        ideVersions = "2021.1"
+        ideVersions = "2022.2"
     }
 }
 
@@ -24,7 +26,7 @@ group = "org.wso2.lsp4intellij"
 version = gitVersionCalculator.calculateVersion("v")
 
 intellij {
-    version '2021.1'
+    version '2022.2'
     type 'IC'
     updateSinceUntilBuild false
 }
@@ -120,5 +122,40 @@ release {
         pushToRemote = 'upstream'
         commitVersionFileOnly = false
         signTag = false
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name = 'lsp4intellij'
+                description = 'lsp4intellij-bicep, forked from https://github.com/ballerina-platform/lsp4intellij'
+                url = "https://github.com/Flanker32/lsp4intellij-bicep/tree/master/"
+                licenses {
+                    license {
+                        name = "Apache License 2.0"
+                        url = "http://www.apache.org/licenses/"
+                        distribution = "repo"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "Flanker32"
+                        name = "Hanxiao Liu"
+                        email = "hanli@microsoft.com"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/ballerina-platform/lsp4intellij"
+                    developerConnection = "scm:git:git@github.com:ballerina-platform/lsp4intellij.git"
+                    url = "https://github.com/ballerina-platform/lsp4intellij/tree/master/"
+                }
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
     }
 }
