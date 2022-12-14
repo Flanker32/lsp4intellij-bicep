@@ -33,6 +33,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CodeActionCapabilities;
+import org.eclipse.lsp4j.CodeActionKindCapabilities;
 import org.eclipse.lsp4j.CodeActionLiteralSupportCapabilities;
 import org.eclipse.lsp4j.CompletionCapabilities;
 import org.eclipse.lsp4j.CompletionItemCapabilities;
@@ -572,18 +573,18 @@ public class LanguageServerWrapper {
         workspaceClientCapabilities.setConfiguration(false);
 
         TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
-        textDocumentClientCapabilities.setCodeAction(new CodeActionCapabilities());
-        textDocumentClientCapabilities.getCodeAction().setCodeActionLiteralSupport(new CodeActionLiteralSupportCapabilities());
+        textDocumentClientCapabilities.setCodeAction(new CodeActionCapabilities(true));
+        textDocumentClientCapabilities.getCodeAction().setCodeActionLiteralSupport(new CodeActionLiteralSupportCapabilities(new CodeActionKindCapabilities()));
         textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(true)));
-        textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
-        textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
-        textDocumentClientCapabilities.setFormatting(new FormattingCapabilities());
-        textDocumentClientCapabilities.setHover(new HoverCapabilities());
-        textDocumentClientCapabilities.setOnTypeFormatting(new OnTypeFormattingCapabilities());
-        textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
-        textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
-        textDocumentClientCapabilities.setRename(new RenameCapabilities());
-        textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
+        textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities(true));
+        textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities(true));
+        textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(true));
+        textDocumentClientCapabilities.setHover(new HoverCapabilities(true));
+        textDocumentClientCapabilities.setOnTypeFormatting(new OnTypeFormattingCapabilities(true));
+        textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities(true));
+        textDocumentClientCapabilities.setReferences(new ReferencesCapabilities(true));
+        textDocumentClientCapabilities.setRename(new RenameCapabilities(true));
+        textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities(true));
         textDocumentClientCapabilities.setSynchronization(new SynchronizationCapabilities(true, true, true));
         initParams.setCapabilities(
                 new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, null));

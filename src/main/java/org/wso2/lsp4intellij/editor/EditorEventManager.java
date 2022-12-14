@@ -347,6 +347,9 @@ public class EditorEventManager {
             wrapper.notifySuccess(Timeouts.DEFINITION);
             if (definition.isLeft() && !definition.getLeft().isEmpty()) {
                 return definition.getLeft().get(0);
+            } else if (definition.isRight() && !definition.getRight().isEmpty()) {
+                final LocationLink locationLink = definition.getRight().get(0);
+                return new Location(locationLink.getTargetUri(), locationLink.getTargetRange());
             }
         } catch (TimeoutException e) {
             LOG.warn(e);
