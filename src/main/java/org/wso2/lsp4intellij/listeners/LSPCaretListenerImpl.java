@@ -50,7 +50,7 @@ public class LSPCaretListenerImpl extends LSPListener implements CaretListener {
 
     private void debouncedCaretPositionChanged() {
         if (checkEnabled()) {
-            manager.requestAndShowCodeActions();
+            manager.updateErrorAnnotations();
         }
     }
 }
