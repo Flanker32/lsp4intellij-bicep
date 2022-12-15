@@ -131,6 +131,8 @@ publishing {
         mavenJava(MavenPublication) {
             from components.java
             pom {
+                groupId = 'org.wso2.lsp4intellij'
+                artifactId 'lsp4intellij'
                 name = 'lsp4intellij'
                 description = 'lsp4intellij-bicep, forked from https://github.com/ballerina-platform/lsp4intellij'
                 url = "https://github.com/Flanker32/lsp4intellij-bicep/tree/master/"
