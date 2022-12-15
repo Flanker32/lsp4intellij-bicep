@@ -15,7 +15,6 @@
  */
 package org.wso2.lsp4intellij.listeners;
 
-import com.intellij.codeInsight.AutoPopupController;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -55,7 +54,7 @@ public class LSPTypedHandler extends TypedHandlerDelegate {
         }
         for (String triggerChar : manager.completionTriggers) {
             if (triggerChar != null && triggerChar.length() == 1 && triggerChar.charAt(0) == charTyped) {
-                return Result.STOP;
+                return Result.DEFAULT;
             }
         }
         return Result.CONTINUE;

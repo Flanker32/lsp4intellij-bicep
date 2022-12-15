@@ -25,18 +25,36 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.ProgressIndicatorProvider;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.util.PsiEditorUtil;
 import com.intellij.util.ProcessingContext;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.Position;
 import org.jetbrains.annotations.NotNull;
 import org.wso2.lsp4intellij.editor.EditorEventManager;
 import org.wso2.lsp4intellij.editor.EditorEventManagerBase;
 import org.wso2.lsp4intellij.utils.DocumentUtils;
 
+import java.util.Optional;
+
 /**
  * The completion contributor for the LSP
  */
 class LSPCompletionContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(LSPCompletionContributor.class);
+
+    @Override
+    public boolean invokeAutoPopup(@NotNull PsiElement position, char typeChar) {
+        EditorEventManager editorEventManager = EditorEventManagerBase.forEditor(PsiEditorUtil.findEditor(position));
+        if (editorEventManager == null) {
+            return false;
+        }
+        final String value = String.valueOf(typeChar);
+        return Optional.ofNullable(editorEventManager)
+                .map(manager -> manager.completionTriggers)
+                .map(trigger -> StringUtils.isNotEmpty(value) && trigger.contains(value))
+                .orElse(false);
+    }
 
     @Override
     public void fillCompletionVariants(@NotNull CompletionParameters parameters, @NotNull CompletionResultSet result) {
