@@ -19,8 +19,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.ui.UIUtil;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
-import com.vladsch.flexmark.util.options.DataHolder;
-import com.vladsch.flexmark.util.options.MutableDataSet;
+import com.vladsch.flexmark.util.data.MutableDataSet;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkedString;
 import org.eclipse.lsp4j.MarkupContent;
@@ -62,8 +61,9 @@ public class HoverHandler {
                                 "```" + markedString.getLanguage() + " " + markedString.getValue() + "```" :
                                 "";
                     }
-                    Parser parser = Parser.builder().build();
-                    HtmlRenderer renderer = HtmlRenderer.builder().build();
+                    final MutableDataSet options = new MutableDataSet();
+                    Parser parser = Parser.builder(options).build();
+                    HtmlRenderer renderer = HtmlRenderer.builder(options).build();
                     if (!string.isEmpty()) {
                         result.add(renderer.render(parser.parse(string)));
                     }
@@ -73,8 +73,9 @@ public class HoverHandler {
                 return "";
             }
         } else if (hoverContents.isRight()) {
-            Parser parser = Parser.builder().build();
-            HtmlRenderer renderer = HtmlRenderer.builder().build();
+            final MutableDataSet options = new MutableDataSet();
+            Parser parser = Parser.builder(options).build();
+            HtmlRenderer renderer = HtmlRenderer.builder(options).build();
             String markedContent = hoverContents.getRight().getValue();
             return "<html>" + renderer.render(parser.parse(markedContent)) + "</html>";
         } else {
