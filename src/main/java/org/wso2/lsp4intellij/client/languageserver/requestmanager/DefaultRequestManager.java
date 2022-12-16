@@ -16,18 +16,79 @@
 package org.wso2.lsp4intellij.client.languageserver.requestmanager;
 
 import com.intellij.openapi.diagnostic.Logger;
-import org.eclipse.lsp4j.*;
+import org.apache.commons.lang3.BooleanUtils;
+import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
+import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
+import org.eclipse.lsp4j.CodeAction;
+import org.eclipse.lsp4j.CodeActionOptions;
+import org.eclipse.lsp4j.CodeActionParams;
+import org.eclipse.lsp4j.CodeLens;
+import org.eclipse.lsp4j.CodeLensParams;
+import org.eclipse.lsp4j.ColorInformation;
+import org.eclipse.lsp4j.ColorPresentation;
+import org.eclipse.lsp4j.ColorPresentationParams;
+import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.CompletionParams;
+import org.eclipse.lsp4j.DefinitionParams;
+import org.eclipse.lsp4j.DidChangeConfigurationParams;
+import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
+import org.eclipse.lsp4j.DidCloseTextDocumentParams;
+import org.eclipse.lsp4j.DidOpenTextDocumentParams;
+import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.DocumentColorParams;
+import org.eclipse.lsp4j.DocumentFormattingParams;
+import org.eclipse.lsp4j.DocumentHighlight;
+import org.eclipse.lsp4j.DocumentHighlightParams;
+import org.eclipse.lsp4j.DocumentLink;
+import org.eclipse.lsp4j.DocumentLinkParams;
+import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
+import org.eclipse.lsp4j.DocumentRangeFormattingParams;
+import org.eclipse.lsp4j.DocumentSymbol;
+import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.FoldingRange;
+import org.eclipse.lsp4j.FoldingRangeRequestParams;
+import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.ImplementationParams;
+import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.InitializedParams;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.LocationLink;
+import org.eclipse.lsp4j.MessageActionItem;
+import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.RegistrationParams;
+import org.eclipse.lsp4j.RenameParams;
+import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.ShowMessageRequestParams;
+import org.eclipse.lsp4j.SignatureHelp;
+import org.eclipse.lsp4j.SignatureHelpParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.TypeDefinitionParams;
+import org.eclipse.lsp4j.UnregistrationParams;
+import org.eclipse.lsp4j.WillSaveTextDocumentParams;
+import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.WorkspaceSymbol;
+import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
+import org.wso2.lsp4intellij.client.DefaultLanguageClient;
 import org.wso2.lsp4intellij.client.languageserver.ServerStatus;
 import org.wso2.lsp4intellij.client.languageserver.wrapper.LanguageServerWrapper;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -52,34 +113,7 @@ public class DefaultRequestManager implements RequestManager {
         this.wrapper = wrapper;
         this.server = server;
         this.client = client;
-        this.serverCapabilities = serverCapabilities;
-        if (Objects.isNull(serverCapabilities.getHoverProvider())) {
-            serverCapabilities.setHoverProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getCodeActionProvider())) {
-            serverCapabilities.setCodeActionProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getDocumentFormattingProvider())) {
-            serverCapabilities.setDocumentFormattingProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getDocumentRangeFormattingProvider())) {
-            serverCapabilities.setDocumentRangeFormattingProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getDocumentHighlightProvider())) {
-            serverCapabilities.setDefinitionProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getTypeDefinitionProvider())) {
-            serverCapabilities.setTypeDefinitionProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getReferencesProvider())) {
-            serverCapabilities.setReferencesProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getDeclarationProvider())) {
-            serverCapabilities.setDeclarationProvider(true);
-        }
-        if (Objects.isNull(serverCapabilities.getCompletionProvider())) {
-            serverCapabilities.setCompletionProvider(new CompletionOptions(true, Arrays.asList(".", ":", "@", " ")));
-        }
+        this.serverCapabilities = new DynamicServerCapability(serverCapabilities, client instanceof DefaultLanguageClient ? (DefaultLanguageClient) client : null);
         textDocumentOptions = Optional.of(serverCapabilities)
                 .map(ServerCapabilities::getTextDocumentSync)
                 .filter(either -> either.isRight())
@@ -256,7 +290,7 @@ public class DefaultRequestManager implements RequestManager {
         if (checkStatus()) {
             try {
                 return Optional.ofNullable(serverCapabilities.getWorkspaceSymbolProvider())
-                        .map(e -> e.getLeft() || e.getRight() != null).orElse(false) ?
+                        .map(e -> BooleanUtils.isTrue(e.getLeft() )|| e.getRight() != null).orElse(false) ?
                         workspaceService.symbol(params) : null;
             } catch (Exception e) {
                 crashed(e);
@@ -393,11 +427,11 @@ public class DefaultRequestManager implements RequestManager {
 
     @Override
     public CompletableFuture<Hover> hover(HoverParams params) {
-        if (checkStatus()) {
+        if (checkStatus()) { 
             try {
                 return
                     Optional.ofNullable(serverCapabilities.getHoverProvider())
-                            .map(e -> e.getLeft() || e.getRight() != null).orElse(false) ?
+                            .map(e -> BooleanUtils.isTrue(e.getLeft() )|| e.getRight() != null).orElse(false) ?
                         textDocumentService.hover(params) : null;
                
             } catch (Exception e) {
@@ -431,7 +465,7 @@ public class DefaultRequestManager implements RequestManager {
         if (checkStatus()) {
             try {
                 return Optional.ofNullable(serverCapabilities.getReferencesProvider())
-                        .map(e -> e.getLeft() || e.getRight() != null).orElse(false) ?
+                        .map(e -> BooleanUtils.isTrue(e.getLeft() )|| e.getRight() != null).orElse(false) ?
                         textDocumentService.references(params) : null;
             } catch (Exception e) {
                 crashed(e);
@@ -451,7 +485,7 @@ public class DefaultRequestManager implements RequestManager {
         if (checkStatus()) {
             try {
                 return Optional.ofNullable(serverCapabilities.getDocumentHighlightProvider())
-                        .map(e -> e.getLeft() || e.getRight() != null).orElse(false) ?
+                        .map(e -> BooleanUtils.isTrue(e.getLeft() )|| e.getRight() != null).orElse(false) ?
                         textDocumentService.documentHighlight(params) : null;
             } catch (Exception e) {
                 crashed(e);
@@ -466,7 +500,7 @@ public class DefaultRequestManager implements RequestManager {
         if (checkStatus()) {
             try {
                 return Optional.ofNullable(serverCapabilities.getDocumentSymbolProvider())
-                        .map(e -> e.getLeft() || e.getRight() != null).orElse(false) ?
+                        .map(e -> BooleanUtils.isTrue(e.getLeft() )|| e.getRight() != null).orElse(false) ?
                         textDocumentService.documentSymbol(params) : null;
             } catch (Exception e) {
                 crashed(e);
@@ -481,7 +515,7 @@ public class DefaultRequestManager implements RequestManager {
         if (checkStatus()) {
             try {
                 return Optional.ofNullable(serverCapabilities.getDocumentFormattingProvider())
-                        .map(e -> e.getLeft() || e.getRight() != null).orElse(false) ?
+                        .map(e -> BooleanUtils.isTrue(e.getLeft() )|| e.getRight() != null).orElse(false) ?
                         textDocumentService.formatting(params) : null;
             } catch (Exception e) {
                 crashed(e);
@@ -529,7 +563,7 @@ public class DefaultRequestManager implements RequestManager {
         if (checkStatus()) {
             try {
                 return Optional.ofNullable(serverCapabilities.getDefinitionProvider())
-                        .map(e -> e.getLeft() || e.getRight() != null).orElse(false) ?
+                        .map(e -> BooleanUtils.isTrue(e.getLeft() )|| e.getRight() != null).orElse(false) ?
                         textDocumentService.definition(params) : null;
             } catch (Exception e) {
                 crashed(e);
