@@ -25,6 +25,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.ui.UIUtil;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +49,7 @@ public class DefaultLanguageClient implements LanguageClient {
     @NotNull
     private final NotificationGroup STICKY_NOTIFICATION_GROUP = NotificationGroupManager.getInstance().getNotificationGroup("lsp");
     @NotNull
-    final private Map<String, DynamicRegistrationMethods> registrations = new ConcurrentHashMap<>();
+    final private Map<String, Pair<DynamicRegistrationMethods, Object>> registrations = new ConcurrentHashMap<>();
     @NotNull
     private final ClientContext context;
     protected boolean isModal = false;
@@ -78,7 +79,7 @@ public class DefaultLanguageClient implements LanguageClient {
         return CompletableFuture.runAsync(() -> params.getRegistrations().forEach(r -> {
             String id = r.getId();
             Optional<DynamicRegistrationMethods> method = DynamicRegistrationMethods.forName(r.getMethod());
-            method.ifPresent(dynamicRegistrationMethods -> registrations.put(id, dynamicRegistrationMethods));
+            method.ifPresent(dynamicRegistrationMethods -> registrations.put(id, Pair.of(dynamicRegistrationMethods, r.getRegisterOptions())));
 
         }));
     }
@@ -91,8 +92,8 @@ public class DefaultLanguageClient implements LanguageClient {
             if (registrations.containsKey(id)) {
                 registrations.remove(id);
             } else {
-                Map<DynamicRegistrationMethods, String> inverted = new HashMap<>();
-                for (Map.Entry<String, DynamicRegistrationMethods> entry : registrations.entrySet()) {
+                Map<Pair<DynamicRegistrationMethods, Object>, String> inverted = new HashMap<>();
+                for (Map.Entry<String, Pair<DynamicRegistrationMethods, Object>> entry : registrations.entrySet()) {
                     inverted.put(entry.getValue(), entry.getKey());
                 }
                 if (method.isPresent() && inverted.containsKey(method.get())) {
@@ -100,6 +101,10 @@ public class DefaultLanguageClient implements LanguageClient {
                 }
             }
         }));
+    }
+
+    public @NotNull Map<String, Pair<DynamicRegistrationMethods, Object>> getRegistrations() {
+        return this.registrations;
     }
 
     @Override
@@ -112,7 +117,7 @@ public class DefaultLanguageClient implements LanguageClient {
         String uri = FileUtils.sanitizeURI(publishDiagnosticsParams.getUri());
         List<Diagnostic> diagnostics = publishDiagnosticsParams.getDiagnostics();
         Set<EditorEventManager> managers = Optional.ofNullable(EditorEventManagerBase.managersForUri(uri)).orElse(Collections.emptySet());
-        for (EditorEventManager manager: managers) {
+        for (EditorEventManager manager : managers) {
             manager.diagnostics(diagnostics);
         }
     }
